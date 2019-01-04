@@ -73,7 +73,8 @@ print prediction_err
 print kalman_gain
 
 ax = plt.subplot(111)
-plt.plot(range(11), real_data, "b-")
-plt.plot(range(11), measured_data, "r-")
-plt.plot(range(11), predicted_data, "g-")
+ax.plot(range(11), real_data, "b-",label="Truth")
+ax.plot(range(11), measured_data, "r-",label="Measured")
+ax.plot(range(11), predicted_data, "g-",label="predicted")
+ax.legend()
 plt.show()
