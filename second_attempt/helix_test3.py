@@ -1,29 +1,29 @@
-# instead of using measurements be some variation on the truth data, have unmoving boxes of some resolution as the measurements
-# currently skipped
 from numpy import *
 import matplotlib.pyplot as plt
 from random import *
 from mpl_toolkits.mplot3d import Axes3D
-
+from math import *
 init_point = array([0,0,0])
 del_x = 10
 truth_adjust = array([del_x,randint(-10,10),randint(-10,10)])
 #truth_adjust = array([del_x,3,0])
 print truth_adjust
 num_steps = 500
-res =100
-x_res = 2
+res =5.0
+z_res = 1
+R = 100
 def make_truth(init_point,truth_adjust):
 	truth_datax =[init_point[0]]
 	truth_datay =[init_point[1]]
 	truth_dataz =[init_point[2]]
 	new_point = init_point
+	phase_shift = pi
 	for t_step in range(num_steps):
-		t=1
-		new_point = new_point + dot(t,truth_adjust)
-		truth_datax.append(new_point[0])
-		truth_datay.append(new_point[1])
-		truth_dataz.append(new_point[2])
+		#t=1
+		#new_point = new_point + dot(t,truth_adjust)
+		truth_datax.append(R*(cos((2*pi*t_step/(2*num_steps))) - 1))
+		truth_datay.append(R*sin((2*pi*t_step/(2*num_steps))))
+		truth_dataz.append(t_step)
 	return (truth_datax,truth_datay,truth_dataz)
 truth_x, truth_y,truth_z = make_truth(init_point,truth_adjust)
 
@@ -32,9 +32,9 @@ def make_measured(truth_x,truth_y,truth_z):
 	measured_y =[]
 	measured_z =[]
 	for x,y,z in zip(truth_x,truth_y,truth_z):
-		m_x = x + randint(-x_res,x_res)
+		m_x = x + randint(-res,res)
 		m_y = y + randint(-res,res)
-		m_z = z + randint(-res,res)
+		m_z = z + .2*randint(-z_res,z_res)
 #		if m_x**2 + m_y**2 + m_z**2 < res**2:
 #			continue
 		measured_x.append(m_x)
@@ -57,7 +57,7 @@ state_history = [current_state]
 F = array([[1,0,0,0,0],[0,1,0,del_x,0],[0,0,1,0,del_x],[0,0,0,1,0],[0,0,0,0,1]])
 #B = array([1,0,0,0,])
 u = del_x
-Q = array([[x_res,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]])
+Q = array([[z_res,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]])
 C = array([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]])
 R = array([[res,0,0,0,0],[0,res,0,0,0],[0,0,res,0,0],[0,0,0,1,0],[0,0,0,0,1]])
 
@@ -95,26 +95,24 @@ ax = fig.add_subplot(111,projection='3d')
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("z")
-ax.plot(kal_x,kal_y,kal_z,c='g')
+#ax.plot(kal_x,kal_y,kal_z,c='g')
 ax.plot(truth_x,truth_y,truth_z,c='r')
 ax.plot(measured_x,measured_y,measured_z,c='b')
 #ax.plot(kal_x,kal_y,kal_z,c='g')
 plt.show()
-ax = plt.subplot(111,projection='3d')
-ax.set_xlabel("x")
-ax.set_ylabel("y")
-ax.set_zlabel("z")
-ax.plot(kal_x,kal_y,kal_z,c='g')
-ax.plot(truth_x,truth_y,truth_z,c='r')
-#ax.plot(measured_x,measured_y,measured_z,c='b')
+#ax = plt.subplot(111,projection='3d')
+#ax.set_xlabel("x")
+#ax.set_ylabel("y")
+#ax.set_zlabel("z")
 #ax.plot(kal_x,kal_y,kal_z,c='g')
-plt.show()
-ax = plt.subplot(111)
-ax.set_xlabel("x")
-ax.set_ylabel("dis")
-ax.plot(truth_x, [sqrt( (kx-tx)**2 + (ky-ty)**2 + (kz-tz)**2) for kx,ky,kz,tx,ty,tz in zip(kal_x,kal_y,kal_z,truth_x,truth_y,truth_z)],'r')
-ax.plot(truth_x, [(kx-tx) for kx,tx in zip(kal_x,truth_x)],'m')
-ax.plot(truth_x, [(ky-ty) for ky,ty in zip(kal_y,truth_y)],'b')
-ax.plot(truth_x, [(kz-tz) for kz,tz in zip(kal_z,truth_z)],'g')
-plt.show()
-print len(truth_x), len(kal_x)
+#ax.plot(truth_x,truth_y,truth_z,c='r')
+#plt.show()
+#ax = plt.subplot(111)
+#ax.set_xlabel("x")
+#ax.set_ylabel("dis")
+#ax.plot(truth_x, [sqrt( (kx-tx)**2 + (ky-ty)**2 + (kz-tz)**2) for kx,ky,kz,tx,ty,tz in zip(kal_x,kal_y,kal_z,truth_x,truth_y,truth_z)],'r')
+#ax.plot(truth_x, [(kx-tx) for kx,tx in zip(kal_x,truth_x)],'m')
+#ax.plot(truth_x, [(ky-ty) for ky,ty in zip(kal_y,truth_y)],'b')
+#ax.plot(truth_x, [(kz-tz) for kz,tz in zip(kal_z,truth_z)],'g')
+#plt.show()
+#print len(truth_x), len(kal_x)
