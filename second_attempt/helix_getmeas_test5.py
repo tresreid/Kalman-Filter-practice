@@ -79,7 +79,7 @@ for meas_x,meas_y,meas_z in measured_all:
 def make_coords(state,phix,meas,z =False,dz0=0):
 	x_coord = state[0]*cos(state[1]) + (a/(state[2]))*(cos(state[1]))
 	y_coord = state[0]*(sin(state[1])) + (a/(state[2]))*(sin(state[1]))
-	z_coord = meas[2] + (a/(state[2]))*(state[4])*phix - state[3] #+dz0
+	z_coord = meas[2] + (a/(state[2]))*(state[4])*phix - state[3] +dz0
 #	z_coord =  (a/(state[2]))*(state[4])*state[1] - state[3] #+dz0
 	if z:
 		phix = ang_steps
