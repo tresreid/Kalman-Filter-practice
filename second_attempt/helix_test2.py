@@ -47,9 +47,6 @@ def make_truth(init_point,truth_adjust):
 truth_x, truth_y,truth_z = make_truth(init_point,truth_adjust)
 
 def make_measured(truth_x,truth_y,truth_z):
-	#measured_x =[]
-	#measured_y =[]
-	#measured_z =[]
 	measured_tuple =[]
 	for i,(x,y,z) in enumerate(zip(truth_x,truth_y,truth_z)):
 		if i%1 ==0:
@@ -57,16 +54,10 @@ def make_measured(truth_x,truth_y,truth_z):
 			m_y = y + (res_max/res)*randint(-res,res)
 			m_z = z + (res_max/res)*randint(-res,res)
 			measured_tuple.append((m_x,m_y,m_z))
-			#measured_x.append(m_x)
-			#measured_y.append(m_y)
-			#measured_z.append(m_z)
-	#print measured_tuple
 	#measured_sorted = measured_tuple
 	measured_sorted = sorted(measured_tuple, key=lambda x: x[2])
 	#measured_sorted = sorted(measured_tuple, key=lambda x: get_angle(x))
 	return measured_sorted
-	#return measured_x,measured_y,measured_z
-#measured_x,measured_y,measured_z = make_measured(truth_x,truth_y,truth_z)
 measured_all = make_measured(truth_x,truth_y,truth_z)
 measured_x =[]
 measured_y =[]
@@ -75,7 +66,7 @@ for meas_x,meas_y,meas_z in measured_all:
 	measured_x.append(meas_x)
 	measured_y.append(meas_y)
 	measured_z.append(meas_z)
-	#print meas_x,meas_y,meas_z
+
 def make_coords(state,phix,meas,z =False,dz0=0):
 	x_coord = state[0]*cos(state[1]) + (a/(state[2]))*(cos(state[1]))
 	y_coord = state[0]*(sin(state[1])) + (a/(state[2]))*(sin(state[1]))
@@ -86,10 +77,6 @@ def make_coords(state,phix,meas,z =False,dz0=0):
 		z_coord =  (a/(state[2]))*(state[4])*state[1] #- state[3] #+dz0
 		#z_coord = meas[2] + (a/(state[2]))*(state[4])*2*abs(sin(phix/2)) + state[3] -dz0
 		z_coord = meas[2] + (a/(state[2]))*(state[4])*phix - state[3] +dz0
-#		print "z0: ",meas[2]
-#		print "phi: ",phix
-#		print "tanl: ", state[4]
-#		print "dxy: ", (a/(state[2]))*phix
 	return array([x_coord,y_coord,z_coord])
 def convert_meas(meas0,meas1,xc,z=False,step=0):
 	###still have issues with X_c and Y_c. Also dp does not always give good values for truth
@@ -99,11 +86,6 @@ def convert_meas(meas0,meas1,xc,z=False,step=0):
 	Y_c =0 
 #	print "X_c: ", X_c
 #	print "Y_c: ",Y_c	
-#	m_phi = atan((meas1[1]-Y_c)/(meas1[0]-X_c))
-#	if sign(meas1[0]) <0: # only if x is negative add pi
-#		m_phi = m_phi +pi
-#	if sign(meas1[0]) >0 and sign(meas1[1])<0:
-#		m_phi = m_phi +2*pi
 	m_phi = get_angle(meas1)
 	m_dp = (X_c-meas1[0])*cos(m_phi) + (Y_c-meas1[1])*sin(m_phi) + (a/xc[2])
 	m_k = xc[2]
@@ -113,8 +95,8 @@ def convert_meas(meas0,meas1,xc,z=False,step=0):
 		m_dz = truth_z[step]-measured_z[step]	
 		m_sgn=(sqrt((truth_x[step])**2+(truth_y[step])**2) - (sqrt((measured_x[step])**2+(measured_y[step])**2)))
 		m_dp =sqrt( measured_x[step]**2 + measured_y[step]**2) - (a/m_k) 
-		#m_tanl = (meas1[2]-meas0[2])/(sqrt((meas1[0]-meas0[0])**2+(meas1[1]-meas0[1])**2))
-		#m_tanl = (meas1[2]-0)/(sqrt((meas1[0]-0)**2+(meas1[1]-0)**2))
+	#	m_tanl = (meas1[2]-meas0[2])/(sqrt((meas1[0]-meas0[0])**2+(meas1[1]-meas0[1])**2))
+	#	m_tanl = (meas1[2]-0)/(sqrt((meas1[0]-0)**2+(meas1[1]-0)**2))
 		#m_tanl = (meas1[2]-0)/(m_phi*a/m_k)
 		m_tanl = (truth_z[step]-0)/(rad*ang_steps*step)
 	return array([m_dp,m_phi,m_k,m_dz,m_tanl])
