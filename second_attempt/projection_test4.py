@@ -79,6 +79,28 @@ def make_coords(state,phix,meas,z =False,dz0=0):
 		#z_coord = meas[2] + (a/(state[2]))*(state[4])*2*abs(sin(phix/2)) + state[3] -dz0
 		z_coord = meas[2] + (a/(state[2]))*(state[4])*phix - state[3] +dz0
 	return array([x_coord,y_coord,z_coord])
+#def convert_meas(meas0,meas1,xc,z=False,step=0):
+#	###still have issues with X_c and Y_c. Also dp does not always give good values for truth
+##	X_c = meas0[0] + (xc[0]-a/xc[2])*abs(cos(xc[1]))
+##	Y_c = meas0[1] + (xc[0]-a/xc[2])*abs(sin(xc[1]))
+#	X_c =0 
+#	Y_c =0 
+##	print "X_c: ", X_c
+##	print "Y_c: ",Y_c	
+#	m_phi = get_angle(meas1)
+#	m_dp = (X_c-meas1[0])*cos(m_phi) + (Y_c-meas1[1])*sin(m_phi) + (a/xc[2])
+#	m_k = xc[2]
+#	m_tanl = xc[4]
+#	m_dz = (meas0[2]-meas1[2])+((a/xc[2])*(m_phi-xc[1])*m_tanl) + xc[3]
+#	if z:
+#		m_dz = truth_z[step]-measured_z[step]	
+#		m_sgn=(sqrt((truth_x[step])**2+(truth_y[step])**2) - (sqrt((measured_x[step])**2+(measured_y[step])**2)))
+#		m_dp =sqrt( measured_x[step]**2 + measured_y[step]**2) - (a/m_k) 
+#	#	m_tanl = (meas1[2]-meas0[2])/(sqrt((meas1[0]-meas0[0])**2+(meas1[1]-meas0[1])**2))
+##		m_tanl = (meas1[2]-0)/(sqrt((meas1[0]-0)**2+(meas1[1]-0)**2))
+#		m_tanl = (meas1[2]-0)/(m_phi*a/m_k)
+##		m_tanl = (truth_z[step]-0)/(rad*ang_steps*step)
+#	return array([m_dp,m_phi,m_k,m_dz,m_tanl])
 def convert_meas(meas0,meas1,xc,z=False,step=0):
 	###still have issues with X_c and Y_c. Also dp does not always give good values for truth
 #	X_c = meas0[0] + (xc[0]-a/xc[2])*abs(cos(xc[1]))
@@ -92,14 +114,6 @@ def convert_meas(meas0,meas1,xc,z=False,step=0):
 	m_k = xc[2]
 	m_tanl = xc[4]
 	m_dz = (meas0[2]-meas1[2])+((a/xc[2])*(m_phi-xc[1])*m_tanl) + xc[3]
-	if z:
-		m_dz = truth_z[step]-measured_z[step]	
-		m_sgn=(sqrt((truth_x[step])**2+(truth_y[step])**2) - (sqrt((measured_x[step])**2+(measured_y[step])**2)))
-		m_dp =sqrt( measured_x[step]**2 + measured_y[step]**2) - (a/m_k) 
-	#	m_tanl = (meas1[2]-meas0[2])/(sqrt((meas1[0]-meas0[0])**2+(meas1[1]-meas0[1])**2))
-#		m_tanl = (meas1[2]-0)/(sqrt((meas1[0]-0)**2+(meas1[1]-0)**2))
-		m_tanl = (meas1[2]-0)/(m_phi*a/m_k)
-#		m_tanl = (truth_z[step]-0)/(rad*ang_steps*step)
 	return array([m_dp,m_phi,m_k,m_dz,m_tanl])
 ##############################################################
 # make the state out of x, theta and m(slope)
@@ -113,14 +127,14 @@ z1 = array([measured_x[1],measured_y[1],measured_z[1]])
 init_dp,init_azmu,init_k,init_dz,init_dip = convert_meas(z0,z1,array([0,0,1,0,z_step/(2*pi*a/ang_steps)]),True,1)	
 
 init_dip_t = (truth_z[1]-0)/(rad*ang_steps)
-current_state = array([init_dp,init_azmu,k_0,init_dz,init_dip])
+#current_state = array([init_dp,init_azmu,k_0,init_dz,init_dip])
 #current_state = array([100,.002,-4*k_0,1,.2])
-#current_state = [array([0,0,1,0,init_dip_t])]
+current_state = array([0.001,0.003,1,.001,init_dip_t])
 current_un = array([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]])
 state_history = [current_state]
 state_history_coords = [array([rad,0,0])]
 state_history_coords_true = [array([truth_x[0],truth_y[0],truth_z[0]])]
-state_history_coords_meas = [array([measured_x[0],measured_y[0],measured_z[0]])]
+#state_history_coords_meas = [array([measured_x[0],measured_y[0],measured_z[0]])]
 state_history_true = [array([0,0,1,0,init_dip_t])]
 state_history_meas = [array([0,0,1,0,init_dip])]
 
@@ -178,7 +192,7 @@ def predict_step(x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl):
 	[0,0,(k*tanl)*(k*tanl),0,k*tanl*(1+(tanl*tanl))],#[0,0,0,0,0],[0,0,0,0,0]])
 	[0,0,0,0,0],
 	[0,0,k*tanl*(1+(tanl*tanl)),0,(1+(tanl*tanl))*(1+(tanl*tanl))]])
-	#Q = array([[0,0,0,0,0],[0,10001,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,1]])
+	Q = array([[0,0,0,0,0],[0,0.01,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,1]])
 	x_pre = dot(F,x_cur) + dot(B,u)
 	#x_pre[1] = x_pre[1]%(2*pi)
 	print "x_pre: ",x_pre
@@ -205,19 +219,20 @@ def update_step(step,x_cur,p_cur):
 	#print "meas: "
 	zp = convert_meas(z0,z1,state_history_meas[-1],True,step)	
 	z= z1
-	t0 = array([truth_x[step-1],truth_y[step-1],truth_z[step-1]])
-	t1 = array([truth_x[step],truth_y[step],truth_z[step]])
+	#t0 = array([truth_x[step-1],truth_y[step-1],truth_z[step-1]])
+	#t1 = array([truth_x[step],truth_y[step],truth_z[step]])
 	#print "true: "
-	tt = convert_meas(t0,t1,state_history_true[-1],False,step)
+	#tt = convert_meas(t0,t1,state_history_true[-1],False,step)
 #	tt2 = tt
 	#print "meas: ",z
 	#print "truth: ",tt
 	#H = array([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]])
 	#H = make_projection_matrix(x_cur,phix)
-	z_state =zp# dot(transpose(H),z)
+	#z_state =zp# dot(transpose(H),z)
 	#print "z state: ", z_state
-	dp1 = z_state[0]
-	phi1 = z_state[1]
+	#dp1 = z_state[0]
+	dp1 = zp[0]
+	phi1 = zp[1]
 	dak1 = (dp1+a/k)
 	#del_phi = phi1-phi0
 	del_phi = ang_steps 
@@ -228,30 +243,34 @@ def update_step(step,x_cur,p_cur):
 #	print "del_phi: ", del_phi	
 	x_pre, p_pre = predict_step(x_cur,p_cur,step, del_phi,dak0,dak1,k,tanl)#(10./pi))#tanl)
 	#x_pre[1] = tt[1]
-	H = make_projection_matrix(zp,phix)
-	#H = make_projection_matrix(x_cur,phix)
+	#H = make_projection_matrix(zp,phix)
+	H = make_projection_matrix(x_cur,phix)
 	
 	#print dot(transpose(H),z)
 	print "Hxpre: ", dot(H,x_pre)
 	K = dot(dot(p_pre,transpose(H)), linalg.inv(dot(dot(H,p_pre),transpose(H)) + R))
 	#print "K: ",K
 	x_new = x_pre + dot(K,(z- dot(H,x_pre)))
+	#x_new[1] = x_new[1]%(2*pi)
+	x_new[1] = abs(x_new[1])
+	#xx = make_coords(x_pre,del_phi,z0,True,state_history[-1][3])
+	#x_new = x_pre + dot(K,(z- xx))
 	p_new = p_pre - dot(dot(K,H),p_pre)
-	del_phi_t = tt[1]-state_history_true[-1][1]
+	#del_phi_t = tt[1]-state_history_true[-1][1]
 	del_phi_z = z[1]-state_history_meas[-1][1]
-	tt_coords = make_coords(tt,del_phi_t,state_history_coords_true[-1])
-	z_coords = make_coords(zp,del_phi_z,z0,True,state_history_meas[-1][3])
+	#tt_coords = make_coords(tt,del_phi_t,state_history_coords_true[-1])
+	#z_coords = make_coords(zp,del_phi_z,z0,True,state_history_meas[-1][3])
 
-	t_phi0 = state_history_true[-1][1]
-	t_tanl = state_history_true[-1][4]
-	t_k = state_history_true[-1][2]
-	t_dp0 = state_history_true[-1][0]
-	t_dak0 = (t_dp0+a/t_k)
-	t_dp1 = tt[0]
-	t_phi1 = tt[1]
-	t_dak1 = (t_dp1+a/t_k)
-	t_del_phi = t_phi1-t_phi0
-	FF = make_prediction_matrix(t_del_phi,t_dak0,t_dak1,t_k,t_tanl)
+	#t_phi0 = state_history_true[-1][1]
+	#t_tanl = state_history_true[-1][4]
+	#t_k = state_history_true[-1][2]
+	#t_dp0 = state_history_true[-1][0]
+	#t_dak0 = (t_dp0+a/t_k)
+	#t_dp1 = tt[0]
+	#t_phi1 = tt[1]
+	#t_dak1 = (t_dp1+a/t_k)
+	#t_del_phi = t_phi1-t_phi0
+	#FF = make_prediction_matrix(t_del_phi,t_dak0,t_dak1,t_k,t_tanl)
 	#print "tt step %s: "%(step), tt
 #	print "F*tt: ", dot(FF,tt)
 #	print "Cos: ",cos(t_del_phi), t_dp1*cos(t_del_phi)
@@ -263,9 +282,9 @@ def update_step(step,x_cur,p_cur):
 #	k_coords = make_coords(x_new,del_phi,z0,True,state_history[-1][3])
 	k_coords = dot(H,x_new)
 	
-	print "truth act: ",t1
+	#print "truth act: ",t1
 	#print "truth coords: ",tt_coords
-	print "truth param: ",tt
+	#print "truth param: ",tt
 	#print "meas act: ",z1
 	#print "meas coords: ",z_coords
 	#print "meas param: ",zp
@@ -275,10 +294,10 @@ def update_step(step,x_cur,p_cur):
 	state_history_coords.append(k_coords)#state_history_coords[step-1]))
 	#state_history_coords.append(make_coords(x_new,del_phi,z0))#state_history_coords[step-1]))
 	#state_history_coords.append(make_coords(x_new,del_phi,state_history_coords[-1]))
-	state_history_true.append(tt)
+	#state_history_true.append(tt)
 	state_history_meas.append(zp)
-	state_history_coords_true.append(tt_coords)
-	state_history_coords_meas.append(z_coords)
+	#state_history_coords_true.append(tt_coords)
+	#state_history_coords_meas.append(z_coords)
 	return x_new, p_new
 for num in range(len(measured_x)-1):
 	current_state, current_un = update_step(num+1,current_state,current_un)
@@ -351,6 +370,6 @@ ax = plt.subplot(111)
 ax.set_xlabel("step")
 ax.set_ylabel("angle")
 ax.plot(range(len(truth_x)), [kx[1] for kx in state_history],'g')
-ax.plot(range(len(truth_x)), [tx[1] for tx in state_history_true],'b')
-ax.plot(range(len(truth_x)), [mx[1] for mx in state_history_meas],'r')
+#ax.plot(range(len(truth_x)), [tx[1] for tx in state_history_true],'b')
+#ax.plot(range(len(truth_x)), [mx[1] for mx in state_history_meas],'r')
 plt.show()
