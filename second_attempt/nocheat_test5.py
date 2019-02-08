@@ -17,7 +17,7 @@ a = 10000.#1/(c*BM)
 k_0=1.
 rad = a/k_0#1./BM # mv/qB = k/B let k=1
 res = 10
-res_max = 100
+res_max = 50
 ang_steps = 2*pi/(1.1*num_steps)
 z_step = 60
 def get_angle(meas1):
@@ -269,9 +269,9 @@ ax = fig.add_subplot(111,projection='3d')
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("z")
+ax.plot(measured_x,measured_y,measured_z,c='r')
 ax.plot(kal_x,kal_y,kal_z,c='g')
-ax.plot(truth_x,truth_y,truth_z,c='r')
-ax.plot(measured_x,measured_y,measured_z,c='b')
+ax.plot(truth_x,truth_y,truth_z,c='b')
 plt.show()
 
 ax = plt.subplot(111)
