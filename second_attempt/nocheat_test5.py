@@ -17,7 +17,7 @@ a = 10000.#1/(c*BM)
 k_0=1.
 rad = a/k_0#1./BM # mv/qB = k/B let k=1
 res = 10
-res_max = 50
+res_max = 100
 ang_steps = 2*pi/(1.1*num_steps)
 z_step = 60
 def get_angle(meas1):
@@ -119,9 +119,10 @@ state_history_meas = [array([0,0,1,0,init_dip])]
 u = del_x
 R = array([[std([(m-t) for m,t in zip(measured_x,truth_x)])**2,0,0],[0,std([(m-t) for m,t in zip(measured_y,truth_y)])**2,0],[0,0,std([(m-t) for m,t in zip(measured_z,truth_z)])**2]])
 print R 
-def predict_state(meas,state,dz0):
+def predict_state(meas,state,dz0,x_c,y_c):
 	phi = get_angle(meas)
-	dp = meas[0]*cos(phi) + meas[1]*sin(phi) - a/state[2]
+	dp =  (x_c-meas[0])*cos(phi) + (y_c-meas[1])*sin(phi) - a/state[2]
+	#dp = state[0]#meas[0]*cos(phi) + meas[1]*sin(phi) - a/state[2]
 #	dp = sqrt(meas[0]**2 + meas[1]**2) - a/state[2]
 	#dz = 0#state[3] #- (a/state[3])*(ang_steps)*state[4] #- meas[2]
 	dz = state[3] - (a/state[3])*(ang_steps)*state[4] - meas[2] +dz0
@@ -159,7 +160,7 @@ def make_projection_matrix(state,phi):
 #	])
 	#print H_matrix/
 	return H_matrix
-def predict_step(meas,x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl,dz0):
+def predict_step(meas,x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl,dz0,X_c,Y_c):
 	F = make_prediction_matrix(del_phi,dak0,dak1,k,tanl)
 	B = array([0,0,0,0,0])
 	
@@ -173,7 +174,7 @@ def predict_step(meas,x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl,dz0):
 	[0,0,k*tanl*(1+(tanl*tanl)),0,(1+(tanl*tanl))*(1+(tanl*tanl))]])
 	#Q = array([[0,0,0,0,0],[0,1,0,0,0],[0,1,0,0,1],[0,0,0,0,0],[0,0,1,0,1]])
 	#x_pre = dot(F,x_cur) + dot(B,u) 
-	x_pre = predict_state(meas,x_cur,dz0) + dot(B,u) 
+	x_pre = predict_state(meas,x_cur,dz0,X_c,Y_c) 
 	#x_pre[1] = x_pre[1]%(2*pi)
 	print "x_pre: ",x_pre
 	p_pre = dot(dot(F,p_cur),transpose(F))  + Q
@@ -206,7 +207,10 @@ def update_step(step,x_cur,p_cur):
 
 
 	dz0 = z0[2]
-	x_pre, p_pre = predict_step(z,x_cur,p_cur,step, del_phi,dak0,dak1,k,tanl,dz0)#(10./pi))#tanl)
+	X_c = z0[0] + (x_cur[0]+a/x_cur[2])*cos(x_cur[1])
+	Y_c = z0[1] + (x_cur[0]+a/x_cur[2])*sin(x_cur[1])
+	print X_c,Y_c
+	x_pre, p_pre = predict_step(z,x_cur,p_cur,step, del_phi,dak0,dak1,k,tanl,dz0,X_c,Y_c)#(10./pi))#tanl)
 	#H = make_projection_matrix(zp,phix)
 	H = make_projection_matrix(x_cur,phix)
 	
@@ -225,8 +229,8 @@ def update_step(step,x_cur,p_cur):
 #	z_coords = make_coords(zp,del_phi_z,z0,True,state_history_meas[-1][3])
 
 	x_new[0] = 0
-#	k_coords = make_coords(x_new,del_phi,state_history_coords[-1],True,state_history[-1][3])
-	k_coords = make_coords(x_pre,del_phi,z0,True,state_history[-1][3])
+	k_coords = make_coords(x_new,del_phi,state_history_coords[-1],True,state_history[-1][3])
+	#k_coords = make_coords(x_pre,del_phi,z0,True,state_history[-1][3])
 	#k_coords = dot(H,x_new)
 	print "k_coords", k_coords	
 	#print "truth act: ",t1
@@ -307,26 +311,21 @@ print "kal cut: ",  average([sqrt( (kx-tx)**2 + (ky-ty)**2) for kx,ky,tx,ty in z
 print "meas cut: ", average([sqrt( (mx-tx)**2 + (my-ty)**2) for mx,my,tx,ty in zip(measured_x[num_steps/10:],measured_y[num_steps/10:],truth_x[num_steps/10:],truth_y[num_steps/10:])])
 plt.show()
 
-ax = plt.subplot(111)
-ax.set_xlabel("step")
-ax.set_ylabel("dis (x) (y)")
-ax.plot(range(len(truth_x)), [(kx-tx) for tx,kx in zip(truth_x,kal_x)],'g')
-ax.plot(range(len(truth_x)), [(ky-ty) for ty,ky in zip(truth_y,kal_y)],'r')
-#ax.plot(range(len(truth_x)), [(kz-tz) for tz,kz in zip(truth_z,kal_z)],'g')
-#ax.plot(range(len(truth_x)), [(mz-tz) for tz,mz in zip(truth_z,measured_z)],'r')
-plt.show()
+#ax = plt.subplot(111)
+#ax.set_xlabel("step")
+#ax.set_ylabel("dis (x) (y)")
+#ax.plot(range(len(truth_x)), [(kx-tx) for tx,kx in zip(truth_x,kal_x)],'g')
+#ax.plot(range(len(truth_x)), [(ky-ty) for ty,ky in zip(truth_y,kal_y)],'r')
+#plt.show()
 
-ax = plt.subplot(111)
-ax.set_xlabel("step")
-ax.set_ylabel("x")
-ax.plot(range(len(truth_x)), [kx for kx in kal_x],'g')
-ax.plot(range(len(truth_x)), [tx for tx in truth_x],'b')
-ax.plot(range(len(truth_x)), [ky for ky in kal_y],'m')
-ax.plot(range(len(truth_x)), [ty for ty in truth_y],'r')
-#ax.plot(range(len(truth_x)), kal_z,'g')
-#ax.plot(range(len(truth_x)), measured_z,'r')
-#ax.plot(range(len(truth_x)), truth_z,'b')
-plt.show()
+#ax = plt.subplot(111)
+#ax.set_xlabel("step")
+#ax.set_ylabel("x")
+#ax.plot(range(len(truth_x)), [kx for kx in kal_x],'g')
+#ax.plot(range(len(truth_x)), [tx for tx in truth_x],'b')
+#ax.plot(range(len(truth_x)), [ky for ky in kal_y],'m')
+#ax.plot(range(len(truth_x)), [ty for ty in truth_y],'r')
+#plt.show()
 ax = plt.subplot(111)
 ax.set_xlabel("step")
 ax.set_ylabel("angle")
