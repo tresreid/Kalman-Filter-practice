@@ -13,11 +13,11 @@ num_steps = 1000
 #rad = 1./BM # mv/qB = k/B let k=1
 #c = 3.0*10**(8)
 #BM = 10./c
-a = 7500.#1/(c*BM)
+a = 10000.#1/(c*BM)
 k_0=1.
 rad = a/k_0#1./BM # mv/qB = k/B let k=1
 res = 10
-res_max = 30
+res_max = 50
 ang_steps = 2*pi/(1.1*num_steps)
 z_step = 60
 def get_angle(meas1):
@@ -28,8 +28,6 @@ def get_angle(meas1):
 		m_phi = m_phi +2*pi
 	if meas1[2] > 10*5*(num_steps/6) and m_phi<pi/6:
 		m_phi = m_phi+2*pi
-#	if meas1[2] < 300 and m_phi>(5*pi/6):
-#		m_phi = m_phi-2*pi
 	m_phi = m_phi%(2*pi)
 	return m_phi
 def make_truth(init_point,truth_adjust):
@@ -69,15 +67,16 @@ for meas_x,meas_y,meas_z in measured_all:
 	measured_z.append(meas_z)
 
 def make_coords(state,phix,meas,z =False,dz0=0):
+	phix = ang_steps
 	x_coord = state[0]*cos(state[1]) + (a/(state[2]))*(cos(state[1])) #+ meas[0]
-	y_coord = state[0]*(sin(state[1])) + (a/(state[2]))*(sin(state[1])) #+ meas[1]
+	y_coord = state[0]*(sin(state[1])) + (a/(state[2]))*(sin(state[1]))# + meas[1]
 	z_coord = meas[2] + (a/(state[2]))*(state[4])*phix - state[3] +dz0
 #	z_coord =  (a/(state[2]))*(state[4])*state[1] - state[3] #+dz0
-	if z:
-		phix = ang_steps
-		z_coord =  (a/(state[2]))*(state[4])*state[1] #- state[3] #+dz0
-		#z_coord = meas[2] + (a/(state[2]))*(state[4])*2*abs(sin(phix/2)) + state[3] -dz0
-		z_coord = meas[2] + (a/(state[2]))*(state[4])*phix - state[3] +dz0
+#	if z:
+#		phix = ang_steps
+#		z_coord =  (a/(state[2]))*(state[4])*state[1] #- state[3] #+dz0
+#		#z_coord = meas[2] + (a/(state[2]))*(state[4])*2*abs(sin(phix/2)) + state[3] -dz0
+#		z_coord = meas[2] + (a/(state[2]))*(state[4])*phix - state[3] +dz0
 	return array([x_coord,y_coord,z_coord])
 def convert_meas(meas0,meas1,xc,z=False,step=0):
 	###still have issues with X_c and Y_c. Also dp does not always give good values for truth
@@ -118,20 +117,14 @@ state_history_true = [array([0,0,1,0,init_dip_t])]
 state_history_meas = [array([0,0,1,0,init_dip])]
 
 u = del_x
-#R = array([[1,0,0,0,0],[0,pi/100,0,0,0],[0,0,.001,0,0],[0,0,0,1,0],[0,0,0,0,2]])
-#R = array([[30*30,0,0],[0,30*30,0],[0,0,30*30]])
 R = array([[std([(m-t) for m,t in zip(measured_x,truth_x)])**2,0,0],[0,std([(m-t) for m,t in zip(measured_y,truth_y)])**2,0],[0,0,std([(m-t) for m,t in zip(measured_z,truth_z)])**2]])
 print R 
-#def make_coords(state,phix,meas):
-#	x_coord = meas[0] + state[0]*abs(cos(state[1])) - (a/(state[2]))*(cos(state[1])-cos(state[1]+phix))
-#	y_coord = meas[1] + state[0]*abs(sin(state[1])) - (a/(state[2]))*(sin(state[1])-sin(state[1]+phix))
-#	z_coord = meas[2] + state[3] + (a/(state[2]))*(state[4])*phix
-#	return array([x_coord,y_coord,z_coord])
-def predict_state(meas,state):
+def predict_state(meas,state,dz0):
 	phi = get_angle(meas)
 	dp = meas[0]*cos(phi) + meas[1]*sin(phi) - a/state[2]
-	#dp = sqrt(meas[0]**2 + meas[1]**2) - a#/state[2]
-	dz = state[3]#-meas[2] - (a/state[3])*(ang_steps)*state[4]
+#	dp = sqrt(meas[0]**2 + meas[1]**2) - a/state[2]
+	#dz = 0#state[3] #- (a/state[3])*(ang_steps)*state[4] #- meas[2]
+	dz = state[3] - (a/state[3])*(ang_steps)*state[4] - meas[2] +dz0
 	return array([dp,phi,state[2],dz,state[4]])
 def make_prediction_matrix(del_phi,dak0,dak1,k,tanl):
 	F_matrix = array([ 
@@ -144,14 +137,14 @@ def make_prediction_matrix(del_phi,dak0,dak1,k,tanl):
 	])
 	return F_matrix
 def make_projection_matrix(state,phi):
-#	H_matrix = array([
-##	[cos(state[1]),   -(state[0]+(a/state[2]))*sin(state[1]),   -(a/(state[2]*state[2]))*cos(state[1]), 0  ,0], # dx/da
+	H_matrix = array([
+	[cos(state[1]),   -(state[0]+(a/state[2]))*sin(state[1]),   -(a/(state[2]*state[2]))*cos(state[1]), 0  ,0], # dx/da
 #	[cos(state[1]),   -0*(state[0]+(a/state[2]))*sin(state[1]),   (a/(state[2]*state[2]))*cos(state[1]), 0  ,0], # dx/da
 #	[sin(state[1]),    0*(state[0]+(a/state[2]))*cos(state[1]),   (a/(state[2]*state[2]))*sin(state[1]), 0  ,0], # dy/da
-##	[sin(state[1]),    (state[0]+(a/state[2]))*cos(state[1]),   -(a/(state[2]*state[2]))*sin(state[1]), 0  ,0], # dy/da
-#	#[0,               0,                                    (a/(state[2]*state[2]))*state[4]*phi, -1, (a/state[2])*phi] #dz/da
-#	[0,               0,                                    (a/(state[2]*state[2]))*state[4]*phi, -1, (a/state[2])*state[1]] #dz/da
-#	])
+	[sin(state[1]),    (state[0]+(a/state[2]))*cos(state[1]),   -(a/(state[2]*state[2]))*sin(state[1]), 0  ,0], # dy/da
+	#[0,               0,                                    (a/(state[2]*state[2]))*state[4]*phi, -1, (a/state[2])*phi] #dz/da
+	[0,               0,                                    (a/(state[2]*state[2]))*state[4]*phi, -1, (a/state[2])*state[1]] #dz/da
+	])
 
 	delphi = ang_steps
 #	H_matrix = array([
@@ -159,14 +152,14 @@ def make_projection_matrix(state,phi):
 #	[sin(state[1]),  (state[0]-(a/state[2]))*cos(state[1]) - (a/state[2])*cos(state[1]+delphi),   -(a/(state[2]*state[2]))*(sin(state[1])-sin(state[1]+delphi)), 0  ,0], # dy/da
 #	[0,               0,                                    (a/(state[2]*state[2]))*state[4]*phi, -1, (a/state[2])*state[1]] #dz/da
 #	])
-	H_matrix = array([
-	[cos(state[1]),   -(state[0]-(a/state[2]))*sin(state[1]) + (a/state[2])*sin(state[1]+delphi),   -(a/(state[2]*state[2]))*(cos(state[1])-cos(state[1]+delphi)), 0  ,0], # dx/da
-	[sin(state[1]),  (state[0]-(a/state[2]))*cos(state[1]) - (a/state[2])*cos(state[1]+delphi),   -(a/(state[2]*state[2]))*(sin(state[1])-sin(state[1]+delphi)), 0  ,0], # dy/da
-	[0,               0,                                    (a/(state[2]*state[2]))*state[4]*phi, -1, (a/state[2])*state[1]] #dz/da
-	])
+#	H_matrix = array([
+#	[cos(state[1]),   -(state[0]-(a/state[2]))*sin(state[1]) + (a/state[2])*sin(state[1]+delphi),   -(a/(state[2]*state[2]))*(cos(state[1])-cos(state[1]+delphi)), 0  ,0], # dx/da
+#	[sin(state[1]),  (state[0]-(a/state[2]))*cos(state[1]) - (a/state[2])*cos(state[1]+delphi),   -(a/(state[2]*state[2]))*(sin(state[1])-sin(state[1]+delphi)), 0  ,0], # dy/da
+#	[0,               0,                                    (a/(state[2]*state[2]))*state[4]*phi, -1, (a/state[2])*state[1]] #dz/da
+#	])
 	#print H_matrix/
 	return H_matrix
-def predict_step(meas,x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl):
+def predict_step(meas,x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl,dz0):
 	F = make_prediction_matrix(del_phi,dak0,dak1,k,tanl)
 	B = array([0,0,0,0,0])
 	
@@ -180,10 +173,10 @@ def predict_step(meas,x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl):
 	[0,0,k*tanl*(1+(tanl*tanl)),0,(1+(tanl*tanl))*(1+(tanl*tanl))]])
 	#Q = array([[0,0,0,0,0],[0,1,0,0,0],[0,1,0,0,1],[0,0,0,0,0],[0,0,1,0,1]])
 	#x_pre = dot(F,x_cur) + dot(B,u) 
-	x_pre = predict_state(meas,x_cur) + dot(B,u) 
+	x_pre = predict_state(meas,x_cur,dz0) + dot(B,u) 
 	#x_pre[1] = x_pre[1]%(2*pi)
 	print "x_pre: ",x_pre
-	p_pre = dot(dot(F,p_cur),transpose(F)) + Q
+	p_pre = dot(dot(F,p_cur),transpose(F))  + Q
 	#p_pre = array([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]])#dot(dot(F,p_cur),transpose(F)) + Q
 	return x_pre,p_pre
 
@@ -194,41 +187,26 @@ def update_step(step,x_cur,p_cur):
 	k = x_cur[2]
 	dp0 = x_cur[0]
 	dak0 = (dp0+a/k)
-	#if measured_x[step]-measured_x[step-1] == 0:
-	#	phix = pi/2.
-	#else:
-	#	phix= atan((measured_y[step]-measured_y[step-1])/(measured_x[step]-measured_x[step-1]))
 	phix = (2*pi/(2*num_steps))
 
-	#z = array([measured_x[step],measured_y[step],measured_z[step]])
 	z0 = array([measured_x[step-1],measured_y[step-1],measured_z[step-1]])
 	z1 = array([measured_x[step],measured_y[step],measured_z[step]])
 	#print "meas: "
 	zp = convert_meas(z0,z1,state_history_meas[-1],True,step)	
 	z= z1
-	#t0 = array([truth_x[step-1],truth_y[step-1],truth_z[step-1]])
-	#t1 = array([truth_x[step],truth_y[step],truth_z[step]])
-	#print "true: "
-	#tt = convert_meas(t0,t1,state_history_true[-1],False,step)
-#	tt2 = tt
-	#print "meas: ",z
-	#print "truth: ",tt
-	#H = array([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]])
-	#H = make_projection_matrix(x_cur,phix)
 	z_state =zp# dot(transpose(H),z)
 	#print "z state: ", z_state
 	dp1 = z_state[0]
 	phi1 = z_state[1]
 	dak1 = (dp1+a/k)
-	#del_phi = phi1-phi0
-	del_phi = ang_steps 
+	del_phi = phi1-phi0
+	#del_phi = ang_steps 
 
 
 
 
-
-	x_pre, p_pre = predict_step(z,x_cur,p_cur,step, del_phi,dak0,dak1,k,tanl)#(10./pi))#tanl)
-	#x_pre[1] = tt[1]
+	dz0 = z0[2]
+	x_pre, p_pre = predict_step(z,x_cur,p_cur,step, del_phi,dak0,dak1,k,tanl,dz0)#(10./pi))#tanl)
 	#H = make_projection_matrix(zp,phix)
 	H = make_projection_matrix(x_cur,phix)
 	
@@ -241,18 +219,14 @@ def update_step(step,x_cur,p_cur):
 	#x_new = x_pre + dot(K,(z- dot(H,x_pre)))
 	x_new = x_pre + dot(K,(z- k_coords_pre))
 	#x_new[1] = x_new[1]%(2*pi)
-	#xx = make_coords(x_pre,del_phi,z0,True,state_history[-1][3])
-	#x_new = x_pre + dot(K,(z- xx))
 	p_new = p_pre - dot(dot(K,H),p_pre)
 	print "x_new: ",x_new
-	#del_phi_t = tt[1]-state_history_true[-1][1]
 	del_phi_z = z[1]-state_history_meas[-1][1]
-	#tt_coords = make_coords(tt,del_phi_t,state_history_coords_true[-1])
-	z_coords = make_coords(zp,del_phi_z,z0,True,state_history_meas[-1][3])
+#	z_coords = make_coords(zp,del_phi_z,z0,True,state_history_meas[-1][3])
 
-
-	k_coords = make_coords(x_new,del_phi,state_history_coords[-1],True,state_history[-1][3])
-#	k_coords = make_coords(x_pre,del_phi,z0,True,state_history[-1][3])
+	x_new[0] = 0
+#	k_coords = make_coords(x_new,del_phi,state_history_coords[-1],True,state_history[-1][3])
+	k_coords = make_coords(x_pre,del_phi,z0,True,state_history[-1][3])
 	#k_coords = dot(H,x_new)
 	print "k_coords", k_coords	
 	#print "truth act: ",t1
@@ -270,7 +244,7 @@ def update_step(step,x_cur,p_cur):
 	#state_history_true.append(tt)
 	state_history_meas.append(zp)
 	#state_history_coords_true.append(tt_coords)
-	state_history_coords_meas.append(z_coords)
+#	state_history_coords_meas.append(z_coords)
 	return x_new, p_new
 for num in range(len(measured_x)-1):
 	current_state, current_un = update_step(num+1,current_state,current_un)
