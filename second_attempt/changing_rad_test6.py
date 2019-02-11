@@ -7,7 +7,7 @@ init_point = array([0,0,0])
 del_x = 10
 truth_adjust = array([del_x,randint(-10,10),randint(-10,10)])
 #truth_adjust = array([del_x,3,0])
-num_steps = 1000
+num_steps = 100
 #res =5.0
 #z_res = 1
 #rad = 1./BM # mv/qB = k/B let k=1
@@ -17,7 +17,7 @@ a = 10000.#1/(c*BM)
 k_0=1.
 rad = a/k_0#1./BM # mv/qB = k/B let k=1
 res = 10
-res_max = 20.
+res_max = 50
 ang_steps = 2*pi/(1.1*num_steps)
 z_step = 60
 def get_angle(meas1):
@@ -39,8 +39,10 @@ def make_truth(init_point,truth_adjust):
 	for t_step in range(num_steps):
 		#t=1
 		#new_point = new_point + dot(t,truth_adjust)
-		truth_datax.append(rad*(cos((t_step*ang_steps))))
-		truth_datay.append(rad*(sin(t_step*ang_steps)))
+		radx = rad*(1-.1*float(t_step)/num_steps)
+		print "radx",radx
+		truth_datax.append(radx*(cos((t_step*ang_steps))))
+		truth_datay.append(radx*(sin(t_step*ang_steps)))
 		truth_dataz.append(z_step*t_step)
 	return (truth_datax,truth_datay,truth_dataz)
 truth_x, truth_y,truth_z = make_truth(init_point,truth_adjust)
@@ -122,8 +124,8 @@ print R
 def predict_state(meas,state,dz0,x_c,y_c):
 	phi = get_angle(meas)
 	#dp =  (x_c-meas[0])*cos(phi) + (y_c-meas[1])*sin(phi) - a/state[2]
-	dp =0
-	#dp =  (0+meas[0])*cos(phi) + (0+meas[1])*sin(phi) - a/state[2]
+	dp =state[0]
+	#dp =  1*((0+meas[0])*cos(phi) + (0+meas[1])*sin(phi) - a/state[2])
 	#dp = state[0]#meas[0]*cos(phi) + meas[1]*sin(phi) - a/state[2]
 #	dp = sqrt(meas[0]**2 + meas[1]**2) - a/state[2]
 	#dz = 0#state[3] #- (a/state[3])*(ang_steps)*state[4] #- meas[2]
@@ -166,7 +168,7 @@ def predict_step(meas,x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl,dz0,X_c,Y_c):
 	F = make_prediction_matrix(del_phi,dak0,dak1,k,tanl)
 	B = array([0,0,0,0,0])
 	
-	suppression = 50
+	suppression = 1000
 	Q = suppression*array([
 	[0,0,0,0,0],
 	#[0,.001*tanl,0,0,0],#[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]])
@@ -174,13 +176,14 @@ def predict_step(meas,x_cur,p_cur,step,del_phi,dak0,dak1,k,tanl,dz0,X_c,Y_c):
 	[0,0,(k*tanl)*(k*tanl),0,k*tanl*(1+(tanl*tanl))],#[0,0,0,0,0],[0,0,0,0,0]])
 	[0,0,0,0,0],
 	[0,0,k*tanl*(1+(tanl*tanl)),0,(1+(tanl*tanl))*(1+(tanl*tanl))]])
-	#Q = array([[0,0,0,0,0],[0,1,0,0,0],[0,1,0,0,1],[0,0,0,0,0],[0,0,1,0,1]])
+	#Q = 1000*array([[0,0,0,0,0],[0,1,0,0,0],[0,1,0,0,1],[0,0,0,0,0],[0,0,1,0,1]])
 	#x_pre = dot(F,x_cur) + dot(B,u) 
 	x_pre = predict_state(meas,x_cur,dz0,X_c,Y_c) 
 	#x_pre[1] = x_pre[1]%(2*pi)
 	print "x_pre: ",x_pre
 	p_pre = dot(dot(F,p_cur),transpose(F))  + Q
 	#p_pre = array([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]])#dot(dot(F,p_cur),transpose(F)) + Q
+	print p_pre
 	return x_pre,p_pre
 
 def update_step(step,x_cur,p_cur):

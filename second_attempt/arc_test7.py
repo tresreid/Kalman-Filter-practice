@@ -7,7 +7,7 @@ init_point = array([0,0,0])
 del_x = 10
 truth_adjust = array([del_x,randint(-10,10),randint(-10,10)])
 #truth_adjust = array([del_x,3,0])
-num_steps = 1000
+num_steps = 500
 #res =5.0
 #z_res = 1
 #rad = 1./BM # mv/qB = k/B let k=1
@@ -17,8 +17,8 @@ a = 10000.#1/(c*BM)
 k_0=1.
 rad = a/k_0#1./BM # mv/qB = k/B let k=1
 res = 10
-res_max = 20.
-ang_steps = 2*pi/(1.1*num_steps)
+res_max = 10.
+ang_steps = 2*pi/(5.1*num_steps)
 z_step = 60
 def get_angle(meas1):
 	m_phi = atan((meas1[1])/(meas1[0]))
